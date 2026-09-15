@@ -27,7 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings as SettingsIcon
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -192,7 +192,7 @@ private fun PillTapApp(
 			NavigationBar {
 				NavigationBarItem(screen == Screen.TODAY, { screen = Screen.TODAY }, { Icon(Icons.Default.Home, null) }, label = { Text("Dnes") })
 				NavigationBarItem(screen == Screen.HISTORY, { screen = Screen.HISTORY }, { Icon(Icons.Default.History, null) }, label = { Text("História") })
-				NavigationBarItem(screen == Screen.SETTINGS, { screen = Screen.SETTINGS }, { Icon(SettingsIcon, null) }, label = { Text("Nastavenia") })
+				NavigationBarItem(screen == Screen.SETTINGS, { screen = Screen.SETTINGS }, { Icon(Icons.Default.Settings, null) }, label = { Text("Nastavenia") })
 			}
 		}) { padding ->
 			when (screen) {
