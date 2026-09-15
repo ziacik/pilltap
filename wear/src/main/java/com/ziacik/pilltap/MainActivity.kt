@@ -5,6 +5,7 @@ import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.Ndef
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -45,11 +46,12 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 	private var taken by mutableStateOf(false)
 	private var takenAt by mutableLongStateOf(0L)
 	private var nfcStatus by mutableStateOf(NfcStatus.UNAVAILABLE)
+	private var nfcError by mutableStateOf<String?>(null)
 	private val nfcAdapter by lazy { NfcAdapter.getDefaultAdapter(this) }
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		setContent { WearScreen(taken, takenAt, nfcStatus, ::markTaken) }
+		setContent { WearScreen(taken, takenAt, nfcStatus, nfcError, ::markTaken) }
 	}
 	override fun onResume() {
 		super.onResume()
@@ -104,8 +106,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 			)
 		}.onSuccess {
 			nfcStatus = NfcStatus.READY
-		}.onFailure {
+		}.onFailure { error ->
 			nfcStatus = NfcStatus.ERROR
+			nfcError = "${error.javaClass.simpleName}: ${error.message ?: "(bez správy)"}"
+			Log.e("PillTapNfc", "enableReaderMode failed", error)
 		}
 	}
 	private fun stopNfcReader() {
@@ -149,7 +153,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 private enum class NfcStatus { UNAVAILABLE, DISABLED, READY, ERROR }
 
 @Composable
-private fun WearScreen(taken: Boolean, takenAt: Long, nfcStatus: NfcStatus, onMarkTaken: () -> Unit) {
+private fun WearScreen(taken: Boolean, takenAt: Long, nfcStatus: NfcStatus, nfcError: String?, onMarkTaken: () -> Unit) {
 	MaterialTheme {
 		Column(
 			Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp),
@@ -166,6 +170,9 @@ private fun WearScreen(taken: Boolean, takenAt: Long, nfcStatus: NfcStatus, onMa
 				},
 				color = MaterialTheme.colorScheme.onSurfaceVariant,
 			)
+			if (nfcStatus == NfcStatus.ERROR && nfcError != null) {
+				Text(nfcError, color = MaterialTheme.colorScheme.error)
+			}
 			Spacer(Modifier.height(10.dp))
 			if (taken) {
 				Text("✓ Dnes užité", color = MaterialTheme.colorScheme.primary)
