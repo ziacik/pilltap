@@ -26,6 +26,17 @@ class IntakeStore(context: Context) : SQLiteOpenHelper(context, "pilltap.db", nu
 	}
 	fun today(): IntakeRecord? = recordForDay(LocalDate.now())
 	fun hasTakenToday(): Boolean = today() != null
+	fun deleteToday(): Boolean {
+		val zone = ZoneId.systemDefault()
+		val today = LocalDate.now()
+		val start = today.atStartOfDay(zone).toInstant().toEpochMilli()
+		val end = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+		return writableDatabase.delete(
+			"intake",
+			"taken_at >= ? AND taken_at < ?",
+			arrayOf(start.toString(), end.toString()),
+		) > 0
+	}
 	fun history(limit: Int = 120): List<IntakeRecord> {
 		val result = mutableListOf<IntakeRecord>()
 		readableDatabase.query("intake", arrayOf("id","taken_at","source"), null,null,null,null,"taken_at DESC",limit.toString()).use { c ->
