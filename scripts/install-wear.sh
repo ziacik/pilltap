@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/gradle.sh"
+
 SERIAL="${1:-${ANDROID_SERIAL:-}}"
 
 pick_device() {
@@ -26,14 +28,6 @@ pick_device() {
 	fi
 
 	SERIAL="${devices[0]}"
-}
-
-run_gradle() {
-	if [[ -x "$ROOT_DIR/gradlew" ]]; then
-		"$ROOT_DIR/gradlew" "$@"
-	else
-		gradle -p "$ROOT_DIR" "$@"
-	fi
 }
 
 pick_device
