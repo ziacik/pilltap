@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -41,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +85,7 @@ class MainActivity : ComponentActivity() {
 				writingTag = writingTag,
 				canExactAlarm = canScheduleExactAlarm(),
 				onMarkTaken = { markTaken("phone") },
+				onDeleteToday = { deleteToday() },
 				onWriteTag = { beginTagWrite() },
 				onPickTime = { pickReminderTime() },
 				onRequestExactAlarm = { requestExactAlarmAccess() },
@@ -113,6 +116,14 @@ class MainActivity : ComponentActivity() {
 		WearSync.publishToday(this)
 		refresh++
 		Toast.makeText(this, if (created) "Dnešná dávka zaznamenaná." else "Dnešná dávka už bola zaznamenaná.", Toast.LENGTH_SHORT).show()
+	}
+	private fun deleteToday() {
+		if (!store.deleteToday()) return
+		ReminderScheduler.cancelNotification(this)
+		ReminderScheduler.schedule(this)
+		WearSync.publishToday(this)
+		refresh++
+		Toast.makeText(this, "Dnešný záznam zmazaný.", Toast.LENGTH_SHORT).show()
 	}
 	private fun beginTagWrite() {
 		val adapter = NfcAdapter.getDefaultAdapter(this)
@@ -182,6 +193,7 @@ private fun PillTapApp(
 	writingTag: Boolean,
 	canExactAlarm: Boolean,
 	onMarkTaken: () -> Unit,
+	onDeleteToday: () -> Unit,
 	onWriteTag: () -> Unit,
 	onPickTime: () -> Unit,
 	onRequestExactAlarm: () -> Unit,
@@ -196,7 +208,7 @@ private fun PillTapApp(
 			}
 		}) { padding ->
 			when (screen) {
-				Screen.TODAY -> TodayScreen(today, onMarkTaken, Modifier.padding(padding))
+				Screen.TODAY -> TodayScreen(today, onMarkTaken, onDeleteToday, Modifier.padding(padding))
 				Screen.HISTORY -> HistoryScreen(history, Modifier.padding(padding))
 				Screen.SETTINGS -> SettingsScreen(reminderHour, reminderMinute, writingTag, canExactAlarm, onWriteTag, onPickTime, onRequestExactAlarm, Modifier.padding(padding))
 			}
@@ -205,7 +217,8 @@ private fun PillTapApp(
 }
 
 @Composable
-private fun TodayScreen(today: IntakeRecord?, onMarkTaken: () -> Unit, modifier: Modifier = Modifier) {
+private fun TodayScreen(today: IntakeRecord?, onMarkTaken: () -> Unit, onDeleteToday: () -> Unit, modifier: Modifier = Modifier) {
+	var confirmDelete by remember { mutableStateOf(false) }
 	Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
 		Text("PillTap", fontSize = 34.sp, fontWeight = FontWeight.Bold)
 		Spacer(Modifier.height(28.dp))
@@ -214,11 +227,29 @@ private fun TodayScreen(today: IntakeRecord?, onMarkTaken: () -> Unit, modifier:
 			Spacer(Modifier.height(12.dp))
 			Text("Dnes užité", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
 			Text(formatTime(today.takenAt), color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Spacer(Modifier.height(12.dp))
+			TextButton(onClick = { confirmDelete = true }) { Text("Zmazať dnešný záznam") }
 		} else {
 			Text("Dnes ešte nezaznamenané", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
 			Spacer(Modifier.height(16.dp))
 			Button(onClick = onMarkTaken) { Text("Užil som") }
 		}
+	}
+	if (confirmDelete) {
+		AlertDialog(
+			onDismissRequest = { confirmDelete = false },
+			title = { Text("Zmazať dnešný záznam?") },
+			text = { Text("PillTap bude dnešnú dávku znova považovať za neužitú.") },
+			confirmButton = {
+				TextButton(onClick = {
+					confirmDelete = false
+					onDeleteToday()
+				}) { Text("Zmazať") }
+			},
+			dismissButton = {
+				TextButton(onClick = { confirmDelete = false }) { Text("Zrušiť") }
+			},
+		)
 	}
 }
 
