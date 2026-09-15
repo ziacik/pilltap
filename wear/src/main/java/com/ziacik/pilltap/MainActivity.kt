@@ -1,5 +1,9 @@
 package com.ziacik.pilltap
 
+import android.nfc.NdefRecord
+import android.nfc.NfcAdapter
+import android.nfc.Tag
+import android.nfc.tech.Ndef
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,17 +44,21 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 	private val dataClient by lazy { Wearable.getDataClient(this) }
 	private var taken by mutableStateOf(false)
 	private var takenAt by mutableLongStateOf(0L)
+	private var nfcStatus by mutableStateOf(NfcStatus.UNAVAILABLE)
+	private val nfcAdapter by lazy { NfcAdapter.getDefaultAdapter(this) }
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		setContent { WearScreen(taken, takenAt, ::markTaken) }
+		setContent { WearScreen(taken, takenAt, nfcStatus, ::markTaken) }
 	}
 	override fun onResume() {
 		super.onResume()
 		dataClient.addListener(this)
 		loadStatus()
+		startNfcReader()
 	}
 	override fun onPause() {
+		stopNfcReader()
 		dataClient.removeListener(this)
 		super.onPause()
 	}
@@ -74,6 +82,53 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 		taken = isToday && map.getBoolean("taken")
 		takenAt = if (taken && map.containsKey("takenAt")) map.getLong("takenAt") else 0L
 	}
+	private fun startNfcReader() {
+		val adapter = nfcAdapter
+		if (adapter == null) {
+			nfcStatus = NfcStatus.UNAVAILABLE
+			return
+		}
+		if (!adapter.isEnabled) {
+			nfcStatus = NfcStatus.DISABLED
+			return
+		}
+		runCatching {
+			adapter.enableReaderMode(
+				this,
+				::onTagDiscovered,
+				NfcAdapter.FLAG_READER_NFC_A or
+					NfcAdapter.FLAG_READER_NFC_B or
+					NfcAdapter.FLAG_READER_NFC_F or
+					NfcAdapter.FLAG_READER_NFC_V,
+				null,
+			)
+		}.onSuccess {
+			nfcStatus = NfcStatus.READY
+		}.onFailure {
+			nfcStatus = NfcStatus.ERROR
+		}
+	}
+	private fun stopNfcReader() {
+		runCatching { nfcAdapter?.disableReaderMode(this) }
+	}
+	private fun onTagDiscovered(tag: Tag) {
+		val matches = runCatching {
+			val ndef = Ndef.get(tag) ?: return@runCatching false
+			ndef.connect()
+			try {
+				val message = ndef.ndefMessage ?: return@runCatching false
+				message.records.any { record ->
+					record.tnf == NdefRecord.TNF_MIME_MEDIA &&
+						record.type.toString(Charsets.US_ASCII) == PILLTAP_MIME &&
+						record.payload.toString(Charsets.UTF_8) == "take"
+				}
+			} finally {
+				ndef.close()
+			}
+		}.getOrDefault(false)
+
+		if (matches) runOnUiThread { markTaken() }
+	}
 	private fun markTaken() {
 		val now = System.currentTimeMillis()
 		taken = true
@@ -87,11 +142,14 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 	companion object {
 		private const val STATUS_PATH = "/pilltap/status"
 		private const val INTAKE_PATH = "/pilltap/intake"
+		private const val PILLTAP_MIME = "application/vnd.com.ziacik.pilltap"
 	}
 }
 
+private enum class NfcStatus { UNAVAILABLE, DISABLED, READY, ERROR }
+
 @Composable
-private fun WearScreen(taken: Boolean, takenAt: Long, onMarkTaken: () -> Unit) {
+private fun WearScreen(taken: Boolean, takenAt: Long, nfcStatus: NfcStatus, onMarkTaken: () -> Unit) {
 	MaterialTheme {
 		Column(
 			Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp),
@@ -99,6 +157,15 @@ private fun WearScreen(taken: Boolean, takenAt: Long, onMarkTaken: () -> Unit) {
 			verticalArrangement = Arrangement.Center,
 		) {
 			Text("PillTap", fontWeight = FontWeight.Bold)
+			Text(
+				when (nfcStatus) {
+					NfcStatus.READY -> "NFC pripravené"
+					NfcStatus.DISABLED -> "NFC je vypnuté"
+					NfcStatus.UNAVAILABLE -> "NFC reader nedostupný"
+					NfcStatus.ERROR -> "NFC reader zlyhal"
+				},
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+			)
 			Spacer(Modifier.height(10.dp))
 			if (taken) {
 				Text("✓ Dnes užité", color = MaterialTheme.colorScheme.primary)
