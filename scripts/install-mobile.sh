@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SERIAL="${1:-${ANDROID_SERIAL:-}}"
+
+pick_device() {
+	local devices
+	mapfile -t devices < <(adb devices | awk 'NR > 1 && $2 == "device" { print $1 }')
+
+	if [[ -n "$SERIAL" ]]; then
+		return
+	fi
+
+	if (( ${#devices[@]} == 0 )); then
+		echo "No ADB device connected." >&2
+		exit 1
+	fi
+
+	if (( ${#devices[@]} > 1 )); then
+		echo "More than one ADB device is connected:" >&2
+		printf '  %s\n' "${devices[@]}" >&2
+		echo "Usage: $0 <adb-serial>" >&2
+		echo "or set ANDROID_SERIAL." >&2
+		exit 1
+	fi
+
+	SERIAL="${devices[0]}"
+}
+
+run_gradle() {
+	if [[ -x "$ROOT_DIR/gradlew" ]]; then
+		"$ROOT_DIR/gradlew" "$@"
+	else
+		gradle -p "$ROOT_DIR" "$@"
+	fi
+}
+
+pick_device
+ADB=(adb -s "$SERIAL")
+
+echo "Building mobile APK..."
+run_gradle :mobile:assembleDebug
+
+APK="$ROOT_DIR/mobile/build/outputs/apk/debug/mobile-debug.apk"
+[[ -f "$APK" ]] || { echo "APK not found: $APK" >&2; exit 1; }
+
+echo "Installing mobile APK on $SERIAL..."
+"${ADB[@]}" install -r "$APK"
+
+echo "Done."
