@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		setContent { WearScreen(taken, takenAt, nfcStatus, nfcError, ::markTaken) }
+		setContent { PillTapWearRoot(taken, takenAt, nfcStatus, nfcError, ::markTaken) }
 	}
 	override fun onResume() {
 		super.onResume()
@@ -150,7 +150,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 	}
 }
 
-private enum class NfcStatus { UNAVAILABLE, DISABLED, READY, ERROR }
+internal enum class NfcStatus { UNAVAILABLE, DISABLED, READY, ERROR }
 
 @Composable
 private fun WearScreen(taken: Boolean, takenAt: Long, nfcStatus: NfcStatus, nfcError: String?, onMarkTaken: () -> Unit) {

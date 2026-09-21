@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
 		handleIntent(intent)
 		setContent {
 			refresh
-			PillTapApp(
+			PillTapRoot(
 				today = store.today(),
 				history = store.history(),
 				reminderHour = prefs.reminderHour,

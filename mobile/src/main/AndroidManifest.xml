@@ -5,7 +5,7 @@
 	<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 	<uses-feature android:name="android.hardware.nfc" android:required="true" />
-	<application android:allowBackup="true" android:label="PillTap" android:theme="@style/Theme.PillTap">
+	<application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:label="PillTap" android:theme="@style/Theme.PillTap">
 		<activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
