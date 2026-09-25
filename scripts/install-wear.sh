@@ -7,27 +7,63 @@ source "$ROOT_DIR/scripts/gradle.sh"
 SERIAL="${1:-${ANDROID_SERIAL:-}}"
 
 pick_device() {
-	local devices
-	mapfile -t devices < <(adb devices | awk 'NR > 1 && $2 == "device" { print $1 }')
-
 	if [[ -n "$SERIAL" ]]; then
 		return
 	fi
 
-	if (( ${#devices[@]} == 0 )); then
-		echo "No ADB device connected." >&2
-		exit 1
-	fi
+	local device_serials=()
+	local device_labels=()
 
-	if (( ${#devices[@]} > 1 )); then
-		echo "More than one ADB device is connected:" >&2
-		printf '  %s\n' "${devices[@]}" >&2
-		echo "Usage: $0 <adb-serial>" >&2
-		echo "or set ANDROID_SERIAL." >&2
-		exit 1
-	fi
+	while IFS= read -r line; do
+		[[ -z "$line" || "$line" == "List of devices attached" ]] && continue
 
-	SERIAL="${devices[0]}"
+		if [[ "$line" =~ ^(.*[^[:space:]])[[:space:]]+device([[:space:]].*)?$ ]]; then
+			local serial="${BASH_REMATCH[1]}"
+			local details="${BASH_REMATCH[2]:-}"
+			local model=""
+			local product=""
+
+			if [[ "$details" =~ model:([^[:space:]]+) ]]; then
+				model="${BASH_REMATCH[1]}"
+			fi
+			if [[ "$details" =~ product:([^[:space:]]+) ]]; then
+				product="${BASH_REMATCH[1]}"
+			fi
+
+			device_serials+=("$serial")
+
+			local label=""
+			[[ -n "$model" ]] && label+="model:$model"
+			if [[ -n "$product" ]]; then
+				[[ -n "$label" ]] && label+="  "
+				label+="product:$product"
+			fi
+			[[ -n "$label" ]] && label+="  "
+			label+="$serial"
+			device_labels+=("$label")
+		fi
+	done < <(adb devices -l)
+
+	case "${#device_serials[@]}" in
+		0)
+			echo "No ADB device connected." >&2
+			exit 1
+			;;
+		1)
+			SERIAL="${device_serials[0]}"
+			;;
+		*)
+			echo "Multiple ADB targets found:"
+			PS3="Select target: "
+			select label in "${device_labels[@]}"; do
+				if [[ -n "$label" ]]; then
+					SERIAL="${device_serials[REPLY - 1]}"
+					break
+				fi
+				echo "Invalid selection." >&2
+			done
+			;;
+	esac
 }
 
 pick_device
