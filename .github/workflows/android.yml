@@ -16,4 +16,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.6.1"
-      - run: gradle :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:lintDebug :wear:lintDebug :mobile:assembleDebug :wear:assembleDebug
+      - run: |
+          if ! gradle :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:lintDebug :wear:lintDebug :mobile:assembleDebug :wear:assembleDebug; then
+            find . -path '*/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt' -print -exec cat {} \;
+            exit 1
+          fi
