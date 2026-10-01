@@ -320,7 +320,7 @@ private fun SettingCard(title: String, description: String, content: @Composable
 }
 
 private fun todaySubtitle(): String =
-	LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale("sk", "SK"))).replaceFirstChar { it.uppercase() }
+	LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.forLanguageTag("sk-SK"))).replaceFirstChar { it.uppercase() }
 
 private fun recordCountLabel(count: Int): String = when {
 	count == 1 -> "záznam"
