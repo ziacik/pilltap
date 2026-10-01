@@ -26,7 +26,6 @@ object ReminderScheduler {
 	const val ACTION_MARK_TAKEN = "com.ziacik.pilltap.MARK_TAKEN"
 
 	fun ensureChannel(context: Context) {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 		context.getSystemService(NotificationManager::class.java).createNotificationChannel(
 			NotificationChannel(CHANNEL_ID, "Pripomienky lieku", NotificationManager.IMPORTANCE_HIGH)
 		)
@@ -84,6 +83,13 @@ class ReminderReceiver : BroadcastReceiver() {
 }
 class BootReceiver : BroadcastReceiver() {
 	override fun onReceive(context: Context, intent: Intent) {
+		if (
+			intent.action != Intent.ACTION_BOOT_COMPLETED &&
+			intent.action != Intent.ACTION_TIMEZONE_CHANGED &&
+			intent.action != Intent.ACTION_TIME_CHANGED
+		) {
+			return
+		}
 		ReminderScheduler.ensureChannel(context)
 		ReminderScheduler.schedule(context)
 		WearSync.publishToday(context)
