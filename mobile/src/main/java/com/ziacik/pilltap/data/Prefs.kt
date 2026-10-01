@@ -1,13 +1,14 @@
 package com.ziacik.pilltap.data
 
 import android.content.Context
+import androidx.core.content.edit
 
 class Prefs(context: Context) {
 	private val prefs = context.getSharedPreferences("pilltap", Context.MODE_PRIVATE)
 	var reminderHour: Int
 		get() = prefs.getInt("reminder_hour", 20)
-		set(value) = prefs.edit().putInt("reminder_hour", value).apply()
+		set(value) = prefs.edit { putInt("reminder_hour", value) }
 	var reminderMinute: Int
 		get() = prefs.getInt("reminder_minute", 0)
-		set(value) = prefs.edit().putInt("reminder_minute", value).apply()
+		set(value) = prefs.edit { putInt("reminder_minute", value) }
 }
