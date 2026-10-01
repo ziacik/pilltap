@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.ziacik.pilltap.data.IntakeRecord
 import com.ziacik.pilltap.data.IntakeStore
 import com.ziacik.pilltap.data.Prefs
@@ -58,6 +59,7 @@ import com.ziacik.pilltap.wear.WearSync
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 	private lateinit var store: IntakeStore
@@ -176,7 +178,7 @@ class MainActivity : ComponentActivity() {
 	private fun requestExactAlarmAccess() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 			startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-				data = android.net.Uri.parse("package:$packageName")
+				data = "package:$packageName".toUri()
 			})
 		}
 	}
@@ -198,7 +200,7 @@ private fun PillTapApp(
 	onPickTime: () -> Unit,
 	onRequestExactAlarm: () -> Unit,
 ) {
-	var screen by mutableStateOf(Screen.TODAY)
+	var screen by remember { mutableStateOf(Screen.TODAY) }
 	MaterialTheme {
 		Scaffold(bottomBar = {
 			NavigationBar {
@@ -291,7 +293,7 @@ private fun SettingsScreen(
 		Card(Modifier.fillMaxWidth()) {
 			Column(Modifier.padding(16.dp)) {
 				Text("Denná pripomienka", fontWeight = FontWeight.SemiBold)
-				Text(String.format("%02d:%02d", hour, minute), fontSize = 26.sp)
+				Text(String.format(Locale.ROOT, "%02d:%02d", hour, minute), fontSize = 26.sp)
 				TextButton(onClick = onPickTime) { Text("Zmeniť čas") }
 			}
 		}
