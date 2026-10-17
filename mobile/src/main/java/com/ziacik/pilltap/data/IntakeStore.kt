@@ -152,9 +152,9 @@ class IntakeStore(context: Context) : SQLiteOpenHelper(context, "pilltap.db", nu
 
     fun deleteIntake(id: Long): Boolean = writableDatabase.delete("intake", "id = ?", arrayOf(id.toString())) > 0
 
-    fun history(limit: Int = 200): List<IntakeRecord> {
+    fun history(limit: Int? = null): List<IntakeRecord> {
         val result = mutableListOf<IntakeRecord>()
-        readableDatabase.query("intake", RECORD_COLUMNS, null, null, null, null, "taken_at DESC", limit.toString()).use { c ->
+        readableDatabase.query("intake", RECORD_COLUMNS, null, null, null, null, "taken_at DESC", limit?.toString()).use { c ->
             while (c.moveToNext()) result += recordFrom(c)
         }
         return result
