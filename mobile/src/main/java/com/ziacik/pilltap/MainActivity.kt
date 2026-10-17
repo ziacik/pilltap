@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != NfcAdapter.ACTION_NDEF_DISCOVERED || intent.type != PillTapNfc.MIME_TYPE) return
+        intent.action = Intent.ACTION_MAIN // Do not confirm a second dose after activity recreation.
         val pending = store.todayDoses().filter { it.record == null }
         if (pending.isEmpty()) {
             Toast.makeText(this, "Žiadna nepotvrdená dávka.", Toast.LENGTH_SHORT).show()
