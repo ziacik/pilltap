@@ -9,11 +9,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.ziacik.pilltap.MainActivity
 import com.ziacik.pilltap.data.DoseSlot
 import com.ziacik.pilltap.data.IntakeStore
@@ -87,7 +87,7 @@ object ReminderScheduler {
                 context, slotId.toInt(),
                 Intent(context, ReminderReceiver::class.java).apply {
                     action = ACTION_MARK_TAKEN
-                    data = Uri.parse("pilltap://taken/$slotId")
+                    data = "pilltap://taken/$slotId".toUri()
                     putExtra(EXTRA_SLOT_ID, slotId)
                     putExtra(EXTRA_DATE, today.toString())
                 },
@@ -120,7 +120,7 @@ object ReminderScheduler {
             context, slotId.toInt(),
             Intent(context, ReminderReceiver::class.java).apply {
                 action = ACTION_REMIND
-                data = Uri.parse("pilltap://remind/$slotId")
+                data = "pilltap://remind/$slotId".toUri()
                 putExtra(EXTRA_SLOT_ID, slotId)
                 if (intendedDate != null) putExtra(EXTRA_DATE, intendedDate)
             },
