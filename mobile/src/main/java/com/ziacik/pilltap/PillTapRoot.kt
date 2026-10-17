@@ -436,7 +436,7 @@ private fun SettingsRoot(
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp)) {
         AppHeader("Nastavenia", "NFC a upozornenia")
         Spacer(Modifier.height(20.dp))
-        SettingCard("PillTap NFC tag", if (writingTag) "Prilož tag k zadnej strane telefónu." else "Tag potvrdí najbližšiu nepotvrdenú dávku. Ak je viac dávok rovnako blízko, vyberieš si.") {
+        SettingCard("PillTap NFC tag", if (writingTag) "Prilož tag k zadnej strane telefónu." else "Tag potvrdí najbližšiu nepotvrdenú dávku. Ak sú viaceré dávky časovo blízko, vyberieš si.") {
             Button(onClick = onWriteTag, enabled = !writingTag, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
                 Text(if (writingTag) "Čakám na tag…" else "Zapísať NFC tag")
             }
