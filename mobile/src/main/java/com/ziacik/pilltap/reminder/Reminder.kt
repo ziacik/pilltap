@@ -42,10 +42,11 @@ object ReminderScheduler {
         for (slot in store.activeSlots()) {
             val today = now.toLocalDate()
             val nextDay = store.hasTaken(slot.id, today) || store.wasReminded(slot.id, today)
-            val planned = dayAt(if (nextDay) today.plusDays(1) else today, slot.minuteOfDay)
+            val intendedDate = if (nextDay) today.plusDays(1) else today
+            val planned = dayAt(intendedDate, slot.minuteOfDay)
             val target = if (!nextDay && !planned.isAfter(now)) now.plusSeconds(8) else planned
             val alarm = context.getSystemService(AlarmManager::class.java)
-            val intent = alarmIntent(context, slot.id)
+            val intent = alarmIntent(context, slot.id, intendedDate.toString())
             val at = target.toInstant().toEpochMilli()
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarm.canScheduleExactAlarms()) {
                 alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)
@@ -67,7 +68,11 @@ object ReminderScheduler {
         NotificationManagerCompat.from(context).cancel(notificationId(slotId))
     }
 
-    fun onReminder(context: Context, slotId: Long) {
+    fun onReminder(context: Context, slotId: Long, intendedDate: String?) {
+        if (intendedDate != LocalDate.now().toString()) {
+            schedule(context)
+            return
+        }
         val store = IntakeStore(context)
         val slot = store.activeSlot(slotId) ?: return
         val today = LocalDate.now()
@@ -110,13 +115,14 @@ object ReminderScheduler {
     private fun dayAt(date: LocalDate, minutes: Int): ZonedDateTime =
         date.atTime(minutes / 60, minutes % 60).atZone(ZoneId.systemDefault())
 
-    private fun alarmIntent(context: Context, slotId: Long): PendingIntent =
+    private fun alarmIntent(context: Context, slotId: Long, intendedDate: String? = null): PendingIntent =
         PendingIntent.getBroadcast(
             context, slotId.toInt(),
             Intent(context, ReminderReceiver::class.java).apply {
                 action = ACTION_REMIND
                 data = Uri.parse("pilltap://remind/$slotId")
                 putExtra(EXTRA_SLOT_ID, slotId)
+                if (intendedDate != null) putExtra(EXTRA_DATE, intendedDate)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -129,7 +135,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val slotId = intent.getLongExtra(ReminderScheduler.EXTRA_SLOT_ID, -1L)
         if (slotId < 0) return
         when (intent.action) {
-            ReminderScheduler.ACTION_REMIND -> ReminderScheduler.onReminder(context, slotId)
+            ReminderScheduler.ACTION_REMIND -> ReminderScheduler.onReminder(context, slotId, intent.getStringExtra(ReminderScheduler.EXTRA_DATE))
             ReminderScheduler.ACTION_MARK_TAKEN -> {
                 if (intent.getStringExtra(ReminderScheduler.EXTRA_DATE) != LocalDate.now().toString()) {
                     ReminderScheduler.cancelNotification(context, slotId)
