@@ -106,8 +106,8 @@ class MainActivity : ComponentActivity() {
         }
         val now = LocalTime.now().toSecondOfDay() / 60
         val nearest = pending.sortedBy { abs(it.slot.minuteOfDay - now) }
-        if (nearest.size > 1 && abs(nearest[0].slot.minuteOfDay - now) ==
-            abs(nearest[1].slot.minuteOfDay - now)) {
+        if (nearest.size > 1 &&
+            abs(abs(nearest[0].slot.minuteOfDay - now) - abs(nearest[1].slot.minuteOfDay - now)) <= 30) {
             showNfcPicker = true
         } else {
             markTaken(nearest.first().slot.id, "nfc")
