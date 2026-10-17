@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         store = IntakeStore(this)
         ReminderScheduler.ensureChannel(this)
         ReminderScheduler.schedule(this)
-        requestNotificationPermission()
+        if (store.activeSlots().isNotEmpty()) requestNotificationPermission()
         handleIntent(intent)
         setContent {
             refresh
@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
         }
         ReminderScheduler.cancelSlots(this, oldSlots)
         ReminderScheduler.schedule(this)
+        if (store.activeSlots().isNotEmpty()) requestNotificationPermission()
         WearSync.publishToday(this)
         refresh++
     }
