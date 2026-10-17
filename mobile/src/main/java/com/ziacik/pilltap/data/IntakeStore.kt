@@ -103,6 +103,22 @@ class IntakeStore(context: Context) : SQLiteOpenHelper(context, "pilltap.db", nu
         }
     }
 
+    fun deleteMedicine(id: Long) {
+        val slotIds = slots(id).map { it.id }
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            for (slotId in slotIds) {
+                db.delete("reminders_sent", "slot_id = ?", arrayOf(slotId.toString()))
+            }
+            db.delete("dose_slots", "medicine_id = ?", arrayOf(id.toString()))
+            db.delete("medicines", "id = ?", arrayOf(id.toString()))
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     fun setActive(id: Long, active: Boolean) {
         writableDatabase.update("medicines", ContentValues().apply { put("active", if (active) 1 else 0) }, "id = ?", arrayOf(id.toString()))
     }
