@@ -140,7 +140,16 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 val minute = dose.time.take(2).toIntOrNull()?.times(60)?.plus(dose.time.takeLast(2).toIntOrNull() ?: 0) ?: 0
                 abs(minute - now)
             }
-            if (closest.size == 1) markTaken(closest.first().slotId)
+            if (closest.isNotEmpty()) {
+                val distance = { dose: WearDose ->
+                    val hour = dose.time.take(2).toIntOrNull() ?: 0
+                    val minute = dose.time.takeLast(2).toIntOrNull() ?: 0
+                    abs(hour * 60 + minute - now)
+                }
+                if (closest.size == 1 || abs(distance(closest[0]) - distance(closest[1])) > 30) {
+                    markTaken(closest.first().slotId)
+                }
+            }
         }
     }
 
