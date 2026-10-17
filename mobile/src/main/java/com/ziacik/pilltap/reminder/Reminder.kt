@@ -28,6 +28,7 @@ object ReminderScheduler {
     const val ACTION_REMIND = "com.ziacik.pilltap.REMIND"
     const val ACTION_MARK_TAKEN = "com.ziacik.pilltap.MARK_TAKEN"
     const val EXTRA_SLOT_ID = "slotId"
+    const val EXTRA_DATE = "doseDate"
 
     fun ensureChannel(context: Context) {
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -83,6 +84,7 @@ object ReminderScheduler {
                     action = ACTION_MARK_TAKEN
                     data = Uri.parse("pilltap://taken/$slotId")
                     putExtra(EXTRA_SLOT_ID, slotId)
+                    putExtra(EXTRA_DATE, today.toString())
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
@@ -102,6 +104,7 @@ object ReminderScheduler {
             if (permitted) NotificationManagerCompat.from(context).notify(notificationId(slotId), notification)
         }
         schedule(context)
+        WearSync.publishToday(context)
     }
 
     private fun dayAt(date: LocalDate, minutes: Int): ZonedDateTime =
@@ -128,6 +131,11 @@ class ReminderReceiver : BroadcastReceiver() {
         when (intent.action) {
             ReminderScheduler.ACTION_REMIND -> ReminderScheduler.onReminder(context, slotId)
             ReminderScheduler.ACTION_MARK_TAKEN -> {
+                if (intent.getStringExtra(ReminderScheduler.EXTRA_DATE) != LocalDate.now().toString()) {
+                    ReminderScheduler.cancelNotification(context, slotId)
+                    ReminderScheduler.schedule(context)
+                    return
+                }
                 if (IntakeStore(context).recordDose(slotId, "notification")) {
                     ReminderScheduler.cancelNotification(context, slotId)
                 }
