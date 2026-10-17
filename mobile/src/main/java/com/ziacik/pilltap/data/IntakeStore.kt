@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.core.database.sqlite.transaction
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -74,8 +75,7 @@ class IntakeStore(context: Context) : SQLiteOpenHelper(context, "pilltap.db", nu
         val minutes = times.distinct().sorted()
         require(minutes.isNotEmpty() && minutes.all { it in 0..1439 }) { "Zadaj aspoň jeden platný čas." }
         val db = writableDatabase
-        db.beginTransaction()
-        try {
+        return db.transaction {
             val medicineId = if (id == null) {
                 db.insertOrThrow("medicines", null, ContentValues().apply {
                     put("name", cleanName)
@@ -96,26 +96,19 @@ class IntakeStore(context: Context) : SQLiteOpenHelper(context, "pilltap.db", nu
                     put("minute_of_day", minute)
                 })
             }
-            db.setTransactionSuccessful()
-            return medicineId
-        } finally {
-            db.endTransaction()
+            medicineId
         }
     }
 
     fun deleteMedicine(id: Long) {
         val slotIds = slots(id).map { it.id }
         val db = writableDatabase
-        db.beginTransaction()
-        try {
+        db.transaction {
             for (slotId in slotIds) {
                 db.delete("reminders_sent", "slot_id = ?", arrayOf(slotId.toString()))
             }
             db.delete("dose_slots", "medicine_id = ?", arrayOf(id.toString()))
             db.delete("medicines", "id = ?", arrayOf(id.toString()))
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
