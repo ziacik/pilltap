@@ -11,8 +11,8 @@ android {
 		applicationId = "com.ziacik.pilltap"
 		minSdk = 30
 		targetSdk = 37
-		versionCode = 1
-		versionName = "0.1.0"
+		versionCode = 2
+		versionName = "0.2.0"
 	}
 	buildFeatures { compose = true }
 	lint {
@@ -41,6 +41,6 @@ dependencies {
 	implementation(platform("androidx.compose:compose-bom:2026.09.00"))
 	implementation("androidx.compose.ui:ui")
 	implementation("androidx.compose.foundation:foundation")
-	implementation("androidx.wear.compose:compose-material3:1.7.0")
+	implementation("androidx.wear.compose:compose-material3:1.7.1")
 	implementation("com.google.android.gms:play-services-wearable:20.0.1")
 }
